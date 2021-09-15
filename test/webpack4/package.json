@@ -1,0 +1,16 @@
+{
+  "name": "test",
+  "version": "0.1.0",
+  "description": "新一代前端框架",
+  "scripts": {
+    "start": "npm install && npm run dev",
+    "dev": "webpack-dev-server --config webpack.config.js"
+  },
+  "devDependencies": {
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.10",
+    "webpack-dev-server": "^3.11.0",
+    "webpack-merge": "^4.2.2"
+  },
+  "dependencies": {}
+}
