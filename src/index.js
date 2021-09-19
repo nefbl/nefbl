@@ -1,8 +1,13 @@
-let Nefbl = {};
 
-// 根据运行环境，导出接口
-if (typeof module === "object" && typeof module.exports === "object") {
-    module.exports = Nefbl;
-} else {
-    window.Nefbl = Nefbl;
-}
+/**
+ * 一些用来定义特殊对象的装饰器
+ */
+
+// 组件
+import Component from './decorators/Component';
+
+export default {};
+
+export {
+    Component
+};

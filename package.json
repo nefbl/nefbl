@@ -5,7 +5,7 @@
   "main": "dist/nefbl.min.js",
   "scripts": {
     "start": "npm install && npm run dev",
-    "dev": "rollup --config rollup.config.js -i ./src/index.js -o ./dist/quick-paper.js --watch",
+    "dev": "rollup --config rollup.config.js -i ./src/index.js -o ./dist/nefbl.js --watch",
     "build": "hai2007_nodejs -d dist && rollup --config rollup.config.js && terser ./dist/nefbl.js -o ./dist/nefbl.min.js && hai2007_nodejs --config script.config.js"
   },
   "repository": {

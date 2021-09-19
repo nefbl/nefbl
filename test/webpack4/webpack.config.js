@@ -22,8 +22,23 @@ module.exports = {
             aggregateTimeout: 300
         }
     },
+    resolve: {
+        alias: {
+            'nefbl': require('path').resolve(__dirname, '../../dist/nefbl.js')
+        },
+        extensions: ['.ts', '.js']
+    },
     module: {
-        rules: []
+        rules: [{
+            test: /\.(css|scss)$/,
+            loader: ['./scss-loader.js']
+        }, {
+            test: /\.ts$/,
+            loader: ['awesome-typescript-loader']
+        }, {
+            test: /\.html$/,
+            loader: ['./html-loader.js']
+        }]
     },
     plugins: [
         new webpack.HotModuleReplacementPlugin(),
