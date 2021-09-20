@@ -11,7 +11,7 @@ export default {
          * iife – 一个自动执行的功能，适合作为 <script> 标签
          * umd – 通用模块定义，以 amd，cjs 和 iife 为一体
          */
-        format: 'es',
+        format: 'iife',
         file: "./dist/nefbl.js",
     },
     plugins: [

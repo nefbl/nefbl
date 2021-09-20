@@ -16,5 +16,7 @@
     "webpack-dev-server": "^3.11.0",
     "webpack-merge": "^4.2.2"
   },
-  "dependencies": {}
+  "dependencies": {
+    "nefbl": "0.1.0-alpha.1"
+  }
 }

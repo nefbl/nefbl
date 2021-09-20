@@ -1,6 +1,6 @@
 {
   "name": "nefbl",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "新一代前端框架",
   "main": "dist/nefbl.min.js",
   "scripts": {
