@@ -8,9 +8,12 @@ export default function (config) {
 
     let template = xhtmlToJson(config.template);
 
-
+    console.log(template);
 
     return function (target) {
+
+        // 对象类型标记
+        target.prototype.__type__ = 'Component';
 
     };
 

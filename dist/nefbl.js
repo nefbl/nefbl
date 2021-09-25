@@ -10,7 +10,7 @@
  * Copyright (c) 2021-2021 hai2007 走一步，再走一步。
  * Released under the MIT license
  *
- * Date:Tue Sep 21 2021 13:38:45 GMT+0800 (中国标准时间)
+ * Date:Sat Sep 25 2021 11:01:56 GMT+0800 (GMT+08:00)
  */
 (function () {
   'use strict';
@@ -35,7 +35,11 @@
    * 模块
    */
   function Module (config) {
-    return function (target) {};
+    console.log(config);
+    return function (target) {
+      // 对象类型标记
+      target.prototype.__type__ = 'Module';
+    };
   }
 
   var $RegExp = {
@@ -536,7 +540,32 @@
 
   function Component (config) {
     var template = xhtmlToJson(config.template);
-    return function (target) {};
+    console.log(template);
+    return function (target) {
+      // 对象类型标记
+      target.prototype.__type__ = 'Component';
+    };
+  }
+
+  /**
+   * 指令
+   */
+
+  function Directive (config) {
+    return function (target) {
+      // 对象类型标记
+      target.prototype.__type__ = 'Directive';
+    };
+  }
+
+  /**
+   * 服务
+   */
+  function Service (config) {
+    return function (target) {
+      // 对象类型标记
+      target.prototype.__type__ = 'Service';
+    };
   }
 
   function platform (options) {
@@ -559,6 +588,8 @@
     // 装饰器
     Module: Module,
     Component: Component,
+    Directive: Directive,
+    Service: Service,
     // 核心方法
     platform: platform
   };
