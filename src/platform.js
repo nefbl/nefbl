@@ -6,12 +6,16 @@ export default function (options) {
     // 样式生效
     addStylesClient(options.styles || []);
 
+    // 记录根组件
+    let rootComponent = null;
+
     return {
         bootstrap(Module) {
 
             let module = new Module();
 
-            mountComponent(options.el, module.__bootstrapComponent__);
+            // 通过启动组件，启动
+            rootComponent = mountComponent(options.el, module.__bootstrapComponent__, module);
 
         }
     };

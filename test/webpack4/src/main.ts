@@ -8,7 +8,7 @@ import normalize from "@hai2007/style/normalize.css";
  */
 import appModule from "./app.module";
 
-// 先获取平台实例，然后启动主模块
+// 先获取平台实例
 platform({
 
     // 框架管理的区域
@@ -17,5 +17,7 @@ platform({
     // 全局样式
     styles: [normalize]
 
-}).bootstrap(appModule);
+})
 
+    // 然后启动主模块
+    .bootstrap(appModule);

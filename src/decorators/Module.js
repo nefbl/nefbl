@@ -10,26 +10,25 @@ export default function (config) {
 
     // 分析出服务，指令和组件
     for (let Item of config.declarations) {
-        let instance = new Item();
 
         // 组件
-        if (instance.__type__ == "Component") {
-            component[instance.__selector__] = instance;
+        if (Item.prototype.__type__ == "Component") {
+            component[Item.prototype.__selector__] = Item;
 
             // bootstrap用于标记启动组件
             if (config.bootstrap === Item) {
-                bootstrapComponent = instance;
+                bootstrapComponent = Item;
             }
         }
 
         // 指令
-        else if (instance.__type__ == "Directive") {
-            directive[instance.__selector__] = instance;
+        else if (Item.prototype.__type__ == "Directive") {
+            directive[Item.prototype.__selector__] = Item;
         }
 
         // 服务
-        else if (instance.__type__ == "Service") {
-            service.push(instance);
+        else if (Item.prototype.__type__ == "Service") {
+            service.push(new Item());
         }
 
     }

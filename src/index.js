@@ -12,9 +12,6 @@ import Component from './decorators/Component';
 // 指令
 import Directive from './decorators/Directive';
 
-// 服务
-import Service from './decorators/Service';
-
 /**
  * 核心方法
  */
@@ -32,7 +29,6 @@ let Nefbl = {
     Module,
     Component,
     Directive,
-    Service,
 
     // 核心方法
     platform

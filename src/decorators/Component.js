@@ -1,5 +1,6 @@
 import xhtmlToJson from '@hai2007/algorithm/xhtmlToJson';
-import addStylesClient from '../tool/addStylesClient'
+import addStylesClient from '../tool/addStylesClient';
+import { isArray } from '@hai2007/tool/type';
 
 /**
  * 组件
@@ -7,12 +8,16 @@ import addStylesClient from '../tool/addStylesClient'
 
 let index = 0;
 
+
 export default function (config) {
 
-    let uniqueId = "nefbl-scoped-" + (Math.random() * index++).toFixed(0);
+    let uniqueId = null;
 
     // 加载css
-    addStylesClient(config.styles, uniqueId);
+    if (isArray(config.styles)) {
+        uniqueId = "nefbl-scoped-" + index++;
+        addStylesClient(config.styles, uniqueId);
+    }
 
     let template = xhtmlToJson("<nefbl-component>" + config.template + "</nefbl-component>");
 

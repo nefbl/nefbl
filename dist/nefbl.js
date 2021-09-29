@@ -10,7 +10,7 @@
  * Copyright (c) 2021-2021 hai2007 走一步，再走一步。
  * Released under the MIT license
  *
- * Date:Wed Sep 29 2021 15:27:41 GMT+0800 (中国标准时间)
+ * Date:Wed Sep 29 2021 17:52:01 GMT+0800 (中国标准时间)
  */
 (function () {
   'use strict';
@@ -120,20 +120,20 @@
     try {
       for (_iterator.s(); !(_step = _iterator.n()).done;) {
         var Item = _step.value;
-        var instance = new Item(); // 组件
 
-        if (instance.__type__ == "Component") {
-          component[instance.__selector__] = instance; // bootstrap用于标记启动组件
+        // 组件
+        if (Item.prototype.__type__ == "Component") {
+          component[Item.prototype.__selector__] = Item; // bootstrap用于标记启动组件
 
           if (config.bootstrap === Item) {
-            bootstrapComponent = instance;
+            bootstrapComponent = Item;
           }
         } // 指令
-        else if (instance.__type__ == "Directive") {
-            directive[instance.__selector__] = instance;
+        else if (Item.prototype.__type__ == "Directive") {
+            directive[Item.prototype.__selector__] = Item;
           } // 服务
-          else if (instance.__type__ == "Service") {
-              service.push(instance);
+          else if (Item.prototype.__type__ == "Service") {
+              service.push(new Item());
             }
       }
     } catch (err) {
@@ -192,6 +192,9 @@
   }
 
   var isString = _isString;
+  var isArray = function isArray(input) {
+    return Array.isArray(input);
+  };
 
   function analyseTag (attrString) {
     var attr = {},
@@ -697,9 +700,13 @@
 
   var index = 0;
   function Component (config) {
-    var uniqueId = "nefbl-scoped-" + (Math.random() * index++).toFixed(0); // 加载css
+    var uniqueId = null; // 加载css
 
-    addStylesClient(config.styles, uniqueId);
+    if (isArray(config.styles)) {
+      uniqueId = "nefbl-scoped-" + index++;
+      addStylesClient(config.styles, uniqueId);
+    }
+
     var template = xhtmlToJson("<nefbl-component>" + config.template + "</nefbl-component>");
     return function (target) {
       // 对象类型标记
@@ -716,7 +723,6 @@
   /**
    * 指令
    */
-
   function Directive (config) {
     return function (target) {
       // 对象类型标记
@@ -726,64 +732,76 @@
     };
   }
 
-  /**
-   * 服务
-   */
-  function Service (config) {
-    return function (target) {
-      // 对象类型标记
-      target.prototype.__type__ = 'Service';
-    };
-  }
-
   // 用于挂载组件
-  function mountComponent(target, Component) {
-    var templateObj = Component.__template__;
+  function mountComponent(target, Component, module) {
+    var component = new Component();
+    console.log(Component);
+    console.log(Component.construct); // 记录子组件
+
+    component.__children = [];
+    var templateObj = component.__template__;
 
     (function createElement(index, pEl) {
       var vnode = templateObj[index],
-          el;
+          el = null;
 
       if (vnode.type == 'tag') {
-        el = document.createElement(vnode.name);
+        // 如果是组件
+        if (vnode.name in module.__component__) {
+          // 编译子组件并登记
+          component.__children.push(mountComponent(pEl, module.__component__[vnode.name], module));
+        } // 否则就是普通的标签
+        else {
+            el = document.createElement(vnode.name);
 
-        for (var attrKey in vnode.attrs) {
-          el.setAttribute(attrKey, vnode.attrs[attrKey]);
-        } // 配置唯一标识
+            for (var attrKey in vnode.attrs) {
+              el.setAttribute(attrKey, vnode.attrs[attrKey]);
+            }
+
+            if (component.__uniqueId__ != null) {
+              // 配置唯一标识
+              el.setAttribute(component.__uniqueId__, "");
+            } // 追加孩子
 
 
-        el.setAttribute(Component.__uniqueId__, ""); // 追加孩子
+            var _iterator = _createForOfIteratorHelper(vnode.childNodes),
+                _step;
 
-        var _iterator = _createForOfIteratorHelper(vnode.childNodes),
-            _step;
-
-        try {
-          for (_iterator.s(); !(_step = _iterator.n()).done;) {
-            var subVnode = _step.value;
-            createElement(subVnode, el);
+            try {
+              for (_iterator.s(); !(_step = _iterator.n()).done;) {
+                var subVnode = _step.value;
+                createElement(subVnode, el);
+              }
+            } catch (err) {
+              _iterator.e(err);
+            } finally {
+              _iterator.f();
+            }
           }
-        } catch (err) {
-          _iterator.e(err);
-        } finally {
-          _iterator.f();
-        }
       } else if (vnode.type == 'text') {
         el = document.createTextNode("");
         el.textContent = vnode.content.replace(/↵/g, '\n');
-      } // 追加到父亲结点
+      }
 
-
-      pEl.appendChild(el);
+      if (el != null) {
+        // 追加到父亲结点
+        pEl.appendChild(el);
+      }
     })(0, target);
+
+    return component;
   }
 
   function platform (options) {
     // 样式生效
-    addStylesClient(options.styles || []);
+    addStylesClient(options.styles || []); // 记录根组件
+
+    var rootComponent = null;
     return {
       bootstrap: function bootstrap(Module) {
-        var module = new Module();
-        mountComponent(options.el, module.__bootstrapComponent__);
+        var module = new Module(); // 通过启动组件，启动
+
+        rootComponent = mountComponent(options.el, module.__bootstrapComponent__, module);
       }
     };
   }
@@ -797,7 +815,6 @@
     Module: Module,
     Component: Component,
     Directive: Directive,
-    Service: Service,
     // 核心方法
     platform: platform
   };

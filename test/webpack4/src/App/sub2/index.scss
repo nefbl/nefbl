@@ -1,0 +1,11 @@
+span {
+    font-size: 40px;
+    color: gray;
+
+    &::after {
+        display: inline-block;
+        content: "子组件";
+        font-size: 12px;
+        color: rgb(172, 172, 236);
+    }
+}
