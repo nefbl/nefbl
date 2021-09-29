@@ -17,6 +17,7 @@
     "webpack-merge": "^4.2.2"
   },
   "dependencies": {
+    "@hai2007/style": "^0.3.0",
     "nefbl": "0.1.0-alpha.1"
   }
 }

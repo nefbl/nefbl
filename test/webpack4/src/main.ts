@@ -1,4 +1,5 @@
 import { platform } from 'nefbl';
+import normalize from "@hai2007/style/normalize.css";
 
 // 引入主模块
 /**
@@ -11,7 +12,10 @@ import appModule from "./app.module";
 platform({
 
     // 框架管理的区域
-    el: document.getElementById('root')
+    el: document.getElementById('root'),
+
+    // 全局样式
+    styles: [normalize]
 
 }).bootstrap(appModule);
 

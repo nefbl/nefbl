@@ -5,12 +5,12 @@
  *
  * author 你好2007 < https://hai2007.gitee.io/sweethome >
  *
- * version 0.1.0-alpha.1
+ * version 0.1.0-alpha.2
  *
  * Copyright (c) 2021-2021 hai2007 走一步，再走一步。
  * Released under the MIT license
  *
- * Date:Sat Sep 25 2021 11:01:56 GMT+0800 (GMT+08:00)
+ * Date:Wed Sep 29 2021 15:27:41 GMT+0800 (中国标准时间)
  */
 (function () {
   'use strict';
@@ -31,14 +31,126 @@
     return _typeof(obj);
   }
 
+  function _unsupportedIterableToArray(o, minLen) {
+    if (!o) return;
+    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+    var n = Object.prototype.toString.call(o).slice(8, -1);
+    if (n === "Object" && o.constructor) n = o.constructor.name;
+    if (n === "Map" || n === "Set") return Array.from(o);
+    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+  }
+
+  function _arrayLikeToArray(arr, len) {
+    if (len == null || len > arr.length) len = arr.length;
+
+    for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
+
+    return arr2;
+  }
+
+  function _createForOfIteratorHelper(o, allowArrayLike) {
+    var it;
+
+    if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) {
+      if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
+        if (it) o = it;
+        var i = 0;
+
+        var F = function () {};
+
+        return {
+          s: F,
+          n: function () {
+            if (i >= o.length) return {
+              done: true
+            };
+            return {
+              done: false,
+              value: o[i++]
+            };
+          },
+          e: function (e) {
+            throw e;
+          },
+          f: F
+        };
+      }
+
+      throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+    }
+
+    var normalCompletion = true,
+        didErr = false,
+        err;
+    return {
+      s: function () {
+        it = o[Symbol.iterator]();
+      },
+      n: function () {
+        var step = it.next();
+        normalCompletion = step.done;
+        return step;
+      },
+      e: function (e) {
+        didErr = true;
+        err = e;
+      },
+      f: function () {
+        try {
+          if (!normalCompletion && it.return != null) it.return();
+        } finally {
+          if (didErr) throw err;
+        }
+      }
+    };
+  }
+
   /**
    * 模块
    */
   function Module (config) {
-    console.log(config);
+    var component = {},
+        service = [],
+        directive = {};
+    var bootstrapComponent = null; // 分析出服务，指令和组件
+
+    var _iterator = _createForOfIteratorHelper(config.declarations),
+        _step;
+
+    try {
+      for (_iterator.s(); !(_step = _iterator.n()).done;) {
+        var Item = _step.value;
+        var instance = new Item(); // 组件
+
+        if (instance.__type__ == "Component") {
+          component[instance.__selector__] = instance; // bootstrap用于标记启动组件
+
+          if (config.bootstrap === Item) {
+            bootstrapComponent = instance;
+          }
+        } // 指令
+        else if (instance.__type__ == "Directive") {
+            directive[instance.__selector__] = instance;
+          } // 服务
+          else if (instance.__type__ == "Service") {
+              service.push(instance);
+            }
+      }
+    } catch (err) {
+      _iterator.e(err);
+    } finally {
+      _iterator.f();
+    }
+
     return function (target) {
       // 对象类型标记
-      target.prototype.__type__ = 'Module';
+      target.prototype.__type__ = 'Module'; // 登记所有的指令、组件和服务（包括依赖的模块的）
+
+      target.prototype.__component__ = component;
+      target.prototype.__directive__ = directive;
+      target.prototype.__service__ = service; // 可能还有启动组件
+
+      target.prototype.__bootstrapComponent__ = bootstrapComponent;
     };
   }
 
@@ -534,16 +646,70 @@
     return DomTree;
   }
 
+  // 在浏览器中利用style标签插入样式
+  function addStylesClient(styles, uniqueId) {
+    var styleElement = document.createElement('style');
+    var head = document.head || document.getElementsByTagName('head')[0];
+    var style = styles.join(''); // 如果需要包裹
+
+    if (uniqueId) {
+      style = style.replace(/( {0,}){/g, "{");
+      style = style.replace(/( {0,}),/g, ",");
+      var temp = ""; // 分别表示：是否处于注释中、是否处于内容中、是否由于特殊情况在遇到{前完成了hash
+
+      var isSpecial = false,
+          isContent = false,
+          hadComplete = false;
+
+      for (var i = 0; i < style.length; i++) {
+        if (style[i] == ':' && !isSpecial && !hadComplete && !isContent) {
+          hadComplete = true;
+          temp += "[" + uniqueId + "]";
+        } else if (style[i] == '{' && !isSpecial) {
+          isContent = true;
+          if (!hadComplete) temp += "[" + uniqueId + "]";
+        } else if (style[i] == '}' && !isSpecial) {
+          isContent = false;
+          hadComplete = false;
+        } else if (style[i] == '/' && style[i + 1] == '*') {
+          isSpecial = true;
+        } else if (style[i] == '*' && style[i + 1] == '/') {
+          isSpecial = false;
+        } else if (style[i] == ',' && !isSpecial && !isContent) {
+          if (!hadComplete) temp += "[" + uniqueId + "]";
+          hadComplete = false;
+        }
+
+        temp += style[i];
+      }
+
+      style = temp;
+    }
+
+    styleElement.innerHTML = style;
+    styleElement.setAttribute('type', 'text/css');
+    head.appendChild(styleElement);
+  }
+
   /**
    * 组件
    */
 
+  var index = 0;
   function Component (config) {
-    var template = xhtmlToJson(config.template);
-    console.log(template);
+    var uniqueId = "nefbl-scoped-" + (Math.random() * index++).toFixed(0); // 加载css
+
+    addStylesClient(config.styles, uniqueId);
+    var template = xhtmlToJson("<nefbl-component>" + config.template + "</nefbl-component>");
     return function (target) {
       // 对象类型标记
-      target.prototype.__type__ = 'Component';
+      target.prototype.__type__ = 'Component'; // 登记选择器
+
+      target.prototype.__selector__ = config.selector; // 登记模板对象
+
+      target.prototype.__template__ = template; // 记录唯一标识
+
+      target.prototype.__uniqueId__ = uniqueId;
     };
   }
 
@@ -554,7 +720,9 @@
   function Directive (config) {
     return function (target) {
       // 对象类型标记
-      target.prototype.__type__ = 'Directive';
+      target.prototype.__type__ = 'Directive'; // 登记选择器
+
+      target.prototype.__selector__ = config.selector;
     };
   }
 
@@ -568,15 +736,55 @@
     };
   }
 
+  // 用于挂载组件
+  function mountComponent(target, Component) {
+    var templateObj = Component.__template__;
+
+    (function createElement(index, pEl) {
+      var vnode = templateObj[index],
+          el;
+
+      if (vnode.type == 'tag') {
+        el = document.createElement(vnode.name);
+
+        for (var attrKey in vnode.attrs) {
+          el.setAttribute(attrKey, vnode.attrs[attrKey]);
+        } // 配置唯一标识
+
+
+        el.setAttribute(Component.__uniqueId__, ""); // 追加孩子
+
+        var _iterator = _createForOfIteratorHelper(vnode.childNodes),
+            _step;
+
+        try {
+          for (_iterator.s(); !(_step = _iterator.n()).done;) {
+            var subVnode = _step.value;
+            createElement(subVnode, el);
+          }
+        } catch (err) {
+          _iterator.e(err);
+        } finally {
+          _iterator.f();
+        }
+      } else if (vnode.type == 'text') {
+        el = document.createTextNode("");
+        el.textContent = vnode.content.replace(/↵/g, '\n');
+      } // 追加到父亲结点
+
+
+      pEl.appendChild(el);
+    })(0, target);
+  }
+
   function platform (options) {
-    // 根据配置和浏览器的情况
-    // 初始化一些参数和方法
-    // 这里初始化的主要是浏览器差异导致的一些操作
-    // 后续的相关操作都使用这里生成的
-    // 有点类似抽象一些浏览器相关的原生方法
-    // 只是这里提供的方法是屏蔽了浏览器差异的
+    // 样式生效
+    addStylesClient(options.styles || []);
     return {
-      bootstrap: function bootstrap(module) {}
+      bootstrap: function bootstrap(Module) {
+        var module = new Module();
+        mountComponent(options.el, module.__bootstrapComponent__);
+      }
     };
   }
 

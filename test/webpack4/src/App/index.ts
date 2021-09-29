@@ -6,7 +6,7 @@ import template from './index.html';
 @Component({
     selector: "app-root",
     template,
-    style
+    styles: [style]
 })
 export default class {
 

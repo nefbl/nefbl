@@ -1,14 +1,17 @@
+import addStylesClient from './tool/addStylesClient';
+import mountComponent from './tool/mountComponent';
+
 export default function (options) {
 
-    // 根据配置和浏览器的情况
-    // 初始化一些参数和方法
-    // 这里初始化的主要是浏览器差异导致的一些操作
-    // 后续的相关操作都使用这里生成的
-    // 有点类似抽象一些浏览器相关的原生方法
-    // 只是这里提供的方法是屏蔽了浏览器差异的
+    // 样式生效
+    addStylesClient(options.styles || []);
 
     return {
-        bootstrap(module) {
+        bootstrap(Module) {
+
+            let module = new Module();
+
+            mountComponent(options.el, module.__bootstrapComponent__);
 
         }
     };
