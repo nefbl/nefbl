@@ -10,7 +10,7 @@
  * Copyright (c) 2021-2021 hai2007 走一步，再走一步。
  * Released under the MIT license
  *
- * Date:Fri Oct 01 2021 19:10:36 GMT+0800 (中国标准时间)
+ * Date:Fri Oct 01 2021 19:42:48 GMT+0800 (中国标准时间)
  */
 (function () {
   'use strict';
@@ -880,8 +880,24 @@
     var component = new Component();
 
     var observeFunction = function observeFunction() {
-      if (isFunction(component.$beforeUpdate)) component.$beforeUpdate(); // todo
-      // 触发指令等执行
+      if (isFunction(component.$beforeUpdate)) component.$beforeUpdate(); // 触发指令
+
+      var _iterator = _createForOfIteratorHelper(component.__directives),
+          _step;
+
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var directiveInstance = _step.value;
+
+          if (isFunction(directiveInstance.instance.$update)) {
+            directiveInstance.instance.$update(directiveInstance.el);
+          }
+        }
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
+      }
 
       if (isFunction(component.$updated)) component.$updated();
     };
@@ -903,12 +919,12 @@
               component[key] = instance[key];
             }
       }
-
-      console.log(component);
     } // 记录子组件
 
 
-    component.__children = [];
+    component.__children = []; // 记录指令
+
+    component.__directives = [];
     var templateObj = component.__template__;
 
     (function createElement(index, pEl) {
@@ -925,7 +941,26 @@
             el = document.createElement(vnode.name);
 
             for (var attrKey in vnode.attrs) {
-              el.setAttribute(attrKey, vnode.attrs[attrKey]);
+              // 指令
+              if (attrKey in module.__directive__) {
+                (function () {
+                  var directiveInstance = new module.__directive__[attrKey]();
+
+                  if (isFunction(directiveInstance.$inserted)) {
+                    setTimeout(function () {
+                      directiveInstance.$inserted(el);
+                    });
+                  }
+
+                  component.__directives.push({
+                    instance: directiveInstance,
+                    el: el
+                  });
+                })();
+              } // 普通属性
+              else {
+                  el.setAttribute(attrKey, vnode.attrs[attrKey]);
+                }
             }
 
             if (component.__uniqueId__ != null) {
@@ -934,18 +969,18 @@
             } // 追加孩子
 
 
-            var _iterator = _createForOfIteratorHelper(vnode.childNodes),
-                _step;
+            var _iterator2 = _createForOfIteratorHelper(vnode.childNodes),
+                _step2;
 
             try {
-              for (_iterator.s(); !(_step = _iterator.n()).done;) {
-                var subVnode = _step.value;
+              for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+                var subVnode = _step2.value;
                 createElement(subVnode, el);
               }
             } catch (err) {
-              _iterator.e(err);
+              _iterator2.e(err);
             } finally {
-              _iterator.f();
+              _iterator2.f();
             }
           }
       } else if (vnode.type == 'text') {

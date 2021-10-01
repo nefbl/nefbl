@@ -33,6 +33,9 @@ export default class {
             info,
             doit() {
                 this.info = Math.random();
+            },
+            doit2(){
+                alert('你点击了我');
             }
         };
 
@@ -40,13 +43,13 @@ export default class {
 
     // 生命周期钩子
     $mounted() {
-        console.log('挂载完毕', this);
+        // console.log('挂载完毕', this);
     }
     $beforeUpdate() {
-        console.log('更新前', this);
+        // console.log('更新前', this);
     }
     $updated() {
-        console.log('更新后', this);
+        // console.log('更新后', this);
     }
 
 };

@@ -12,8 +12,12 @@ export default function mountComponent(target, Component, module) {
     let observeFunction = () => {
         if (isFunction(component.$beforeUpdate)) component.$beforeUpdate();
 
-        // todo
-        // 触发指令等执行
+        // 触发指令
+        for (let directiveInstance of component.__directives) {
+            if (isFunction(directiveInstance.instance.$update)) {
+                directiveInstance.instance.$update(directiveInstance.el);
+            }
+        }
 
         if (isFunction(component.$updated)) component.$updated();
     };
@@ -43,11 +47,13 @@ export default function mountComponent(target, Component, module) {
 
         }
 
-        console.log(component);
     }
 
     // 记录子组件
     component.__children = [];
+
+    // 记录指令
+    component.__directives = [];
 
     let templateObj = component.__template__;
 
@@ -70,7 +76,28 @@ export default function mountComponent(target, Component, module) {
 
                 el = document.createElement(vnode.name);
                 for (let attrKey in vnode.attrs) {
-                    el.setAttribute(attrKey, vnode.attrs[attrKey]);
+
+                    // 指令
+                    if (attrKey in module.__directive__) {
+
+                        let directiveInstance = new module.__directive__[attrKey];
+                        if (isFunction(directiveInstance.$inserted)) {
+                            setTimeout(() => {
+                                directiveInstance.$inserted(el);
+                            });
+                        }
+
+                        component.__directives.push({
+                            instance: directiveInstance,
+                            el
+                        });
+                    }
+
+                    // 普通属性
+                    else {
+                        el.setAttribute(attrKey, vnode.attrs[attrKey]);
+                    }
+
                 }
 
                 if (component.__uniqueId__ != null) {
