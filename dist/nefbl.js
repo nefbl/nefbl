@@ -10,7 +10,7 @@
  * Copyright (c) 2021-2021 hai2007 走一步，再走一步。
  * Released under the MIT license
  *
- * Date:Fri Oct 01 2021 09:14:23 GMT+0800 (中国标准时间)
+ * Date:Fri Oct 01 2021 19:10:36 GMT+0800 (中国标准时间)
  */
 (function () {
   'use strict';
@@ -220,6 +220,18 @@
     identifier: /^[a-zA-Z_$][0-9a-zA-Z_$]{0,}$/
   };
 
+  /**
+   * 判断一个值是不是Object。
+   *
+   * @param {*} value 需要判断类型的值
+   * @returns {boolean} 如果是Object返回true，否则返回false
+   */
+  function _isObject (value) {
+    var type = _typeof(value);
+
+    return value != null && (type === 'object' || type === 'function');
+  }
+
   var toString = Object.prototype.toString;
   /**
    * 获取一个值的类型字符串[object type]
@@ -249,7 +261,37 @@
     return type === 'string' || type === 'object' && value != null && !Array.isArray(value) && getType(value) === '[object String]';
   }
 
+  /**
+   * 判断一个值是不是Function。
+   *
+   * @param {*} value 需要判断类型的值
+   * @returns {boolean} 如果是Function返回true，否则返回false
+   */
+
+  function _isFunction (value) {
+    if (!_isObject(value)) {
+      return false;
+    }
+
+    var type = getType(value);
+    return type === '[object Function]' || type === '[object AsyncFunction]' || type === '[object GeneratorFunction]' || type === '[object Proxy]';
+  }
+
+  /*!
+   * 💡 - 值类型判断方法
+   * https://github.com/hai2007/tool.js/blob/master/type.js
+   *
+   * author hai2007 < https://hai2007.gitee.io/sweethome >
+   *
+   * Copyright (c) 2020-present hai2007 走一步，再走一步。
+   * Released under the MIT license
+   */
+
+
+  var isObject = _isObject; // 基本类型
   var isString = _isString;
+
+  var isFunction = _isFunction;
   var isArray = function isArray(input) {
     return Array.isArray(input);
   };
@@ -790,9 +832,81 @@
     };
   }
 
-  // 用于挂载组件
+  // 判断是否是合法的方法或数据key
+  function isValidKey (key) {
+    // 判断是不是_或者$开头的
+    // 这两个内部预留了
+    if (/^[_$]/.test(key)) {
+      throw new Error('The beginning of _ or $ is not allowed：' + key);
+    }
+  }
+
+  function watcher (component, data, key, doback) {
+    // 记录值
+    var value = data.value;
+    var getter_setter = {
+      get: function get() {
+        return value;
+      },
+      set: function set(newValue) {
+        value = newValue; // 回调通知组件更新
+
+        doback();
+      }
+    }; // setter和getter添加监听
+
+    Object.defineProperty(data, 'value', getter_setter); // 组件实例新增属性
+
+    component[key] = value;
+    Object.defineProperty(component, key, getter_setter);
+  }
+
+  function proxy (component, data, key, doback) {
+    var proxy = new Proxy(data.value, {
+      get: function get(_target, _key) {
+        return _target[_key];
+      },
+      set: function set(_target, _key, _value) {
+        // 回调通知组件更新
+        doback();
+        return Reflect.set(_target, _key, _value);
+      }
+    });
+    data.value = proxy;
+    component[key] = proxy;
+  }
+
   function mountComponent(target, Component, module) {
-    var component = new Component(); // 记录子组件
+    var component = new Component();
+
+    var observeFunction = function observeFunction() {
+      if (isFunction(component.$beforeUpdate)) component.$beforeUpdate(); // todo
+      // 触发指令等执行
+
+      if (isFunction(component.$updated)) component.$updated();
+    };
+
+    if (isFunction(component.$setup)) {
+      // 获取当前组件需要双向绑定的数据、方法等
+      var instance = component.$setup();
+
+      for (var key in instance) {
+        isValidKey(key); // ref
+
+        if (instance[key].type == 'ref') {
+          watcher(component, instance[key], key, observeFunction);
+        } // reactive
+        else if (instance[key].type == 'reactive') {
+            proxy(component, instance[key], key, observeFunction);
+          } // 方法
+          else if (isFunction(instance[key])) {
+              component[key] = instance[key];
+            }
+      }
+
+      console.log(component);
+    } // 记录子组件
+
 
     component.__children = [];
     var templateObj = component.__template__;
@@ -845,6 +959,7 @@
       }
     })(0, target);
 
+    if (isFunction(component.$mounted)) component.$mounted();
     return component;
   }
 
@@ -862,6 +977,27 @@
     };
   }
 
+  function ref (data) {
+    // 如果是定义的数据，不好监听，嵌套一层壳
+    return {
+      value: data,
+      type: 'ref'
+    };
+  }
+
+  function reactive (data) {
+    // 如果是对象
+    if (isObject(data)) {
+      return {
+        value: data,
+        type: 'reactive'
+      };
+    } // 否则，还是用ref
+    else {
+        return ref(data);
+      }
+  }
+
   /**
    * 整理好对象并对外暴露调用接口
    */
@@ -872,7 +1008,10 @@
     Component: Component,
     Directive: Directive,
     // 核心方法
-    platform: platform
+    platform: platform,
+    // 暴露的一些有用的方法
+    ref: ref,
+    reactive: reactive
   };
 
   if ((typeof module === "undefined" ? "undefined" : _typeof(module)) === "object" && _typeof(module.exports) === "object") {

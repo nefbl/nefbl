@@ -20,6 +20,13 @@ import Directive from './decorators/Directive';
 import platform from './platform';
 
 /**
+ * 双向绑定
+ */
+
+import ref from './bidirectional-binding/ref';
+import reactive from './bidirectional-binding/reactive';
+
+/**
  * 整理好对象并对外暴露调用接口
  */
 
@@ -31,7 +38,11 @@ let Nefbl = {
     Directive,
 
     // 核心方法
-    platform
+    platform,
+
+    // 暴露的一些有用的方法
+    ref,
+    reactive
 
 };
 

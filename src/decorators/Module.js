@@ -2,7 +2,6 @@
 /**
  * 模块
  */
-
 export default function (config) {
 
     let component = {}, directive = {};

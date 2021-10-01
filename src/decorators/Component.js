@@ -1,5 +1,5 @@
 import xhtmlToJson from '@hai2007/algorithm/xhtmlToJson';
-import addStylesClient from '../tool/addStylesClient';
+import addStylesClient from '../component/addStylesClient';
 import { isArray } from '@hai2007/tool/type';
 
 /**

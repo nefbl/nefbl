@@ -1,5 +1,5 @@
-import addStylesClient from './tool/addStylesClient';
-import mountComponent from './tool/mountComponent';
+import addStylesClient from './component/addStylesClient';
+import mountComponent from './component/mountComponent';
 
 export default function (options) {
 

@@ -1,9 +1,50 @@
+import { isFunction } from '@hai2007/tool/type';
+import isValidKey from '../tools/isValidKey';
+import watcher from '../observe/watcher';
+import proxy from '../observe/proxy'
 
 // 用于挂载组件
 
 export default function mountComponent(target, Component, module) {
 
     let component = new Component();
+
+    let observeFunction = () => {
+        if (isFunction(component.$beforeUpdate)) component.$beforeUpdate();
+
+        // todo
+        // 触发指令等执行
+
+        if (isFunction(component.$updated)) component.$updated();
+    };
+
+    if (isFunction(component.$setup)) {
+
+        // 获取当前组件需要双向绑定的数据、方法等
+        let instance = component.$setup();
+
+        for (let key in instance) {
+            isValidKey(key);
+
+            // ref
+            if (instance[key].type == 'ref') {
+                watcher(component, instance[key], key, observeFunction);
+            }
+
+            // reactive
+            else if (instance[key].type == 'reactive') {
+                proxy(component, instance[key], key, observeFunction);
+            }
+
+            // 方法
+            else if (isFunction(instance[key])) {
+                component[key] = instance[key];
+            }
+
+        }
+
+        console.log(component);
+    }
 
     // 记录子组件
     component.__children = [];
@@ -56,6 +97,8 @@ export default function mountComponent(target, Component, module) {
         }
 
     })(0, target);
+
+    if (isFunction(component.$mounted)) component.$mounted();
 
     return component;
 };
