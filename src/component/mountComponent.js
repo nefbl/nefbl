@@ -1,7 +1,8 @@
 import { isFunction } from '@hai2007/tool/type';
 import isValidKey from '../tools/isValidKey';
 import watcher from '../observe/watcher';
-import proxy from '../observe/proxy'
+import proxy from '../observe/proxy';
+import { evalExpress } from '@hai2007/algorithm/value';
 
 // 用于挂载组件
 
@@ -15,7 +16,13 @@ export default function mountComponent(target, Component, module) {
         // 触发指令
         for (let directiveInstance of component.__directives) {
             if (isFunction(directiveInstance.instance.$update)) {
-                directiveInstance.instance.$update(directiveInstance.el);
+
+                directiveInstance.instance.$update(directiveInstance.el, {
+                    type: directiveInstance.type,
+                    exp: directiveInstance.exp,
+                    value: evalExpress(component, directiveInstance.exp)
+                });
+
             }
         }
 
@@ -77,19 +84,31 @@ export default function mountComponent(target, Component, module) {
                 el = document.createElement(vnode.name);
                 for (let attrKey in vnode.attrs) {
 
-                    // 指令
-                    if (attrKey in module.__directive__) {
+                    let attrKeys = (attrKey + ":").split(':');
 
-                        let directiveInstance = new module.__directive__[attrKey];
+                    // 指令
+                    if (attrKeys[0] in module.__directive__) {
+
+                        let directiveInstance = new module.__directive__[attrKeys[0]];
+
+                        let type = attrKeys[1];
+                        let exp = vnode.attrs[attrKey];
+
                         if (isFunction(directiveInstance.$inserted)) {
                             setTimeout(() => {
-                                directiveInstance.$inserted(el);
+                                directiveInstance.$inserted(el, {
+                                    type,
+                                    exp,
+                                    value: evalExpress(component, exp)
+                                });
                             });
                         }
 
                         component.__directives.push({
                             instance: directiveInstance,
-                            el
+                            el,
+                            type,
+                            exp
                         });
                     }
 

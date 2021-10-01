@@ -24,7 +24,7 @@ export default class {
         let info = ref(1);
 
         setTimeout(() => {
-            // info.value = 10;
+            info.value = 10;
             infoObj.value.key1 = 11;
         }, 1000);
 

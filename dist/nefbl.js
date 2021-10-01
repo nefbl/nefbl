@@ -5,12 +5,12 @@
  *
  * author 你好2007 < https://hai2007.gitee.io/sweethome >
  *
- * version 0.1.0-alpha.2
+ * version 0.1.0
  *
  * Copyright (c) 2021-2021 hai2007 走一步，再走一步。
  * Released under the MIT license
  *
- * Date:Fri Oct 01 2021 19:42:48 GMT+0800 (中国标准时间)
+ * Date:Fri Oct 01 2021 20:12:29 GMT+0800 (中国标准时间)
  */
 (function () {
   'use strict';
@@ -876,6 +876,566 @@
     component[key] = proxy;
   }
 
+  // 后续我们的任务就是对这个数组进行归约即可(归约交付给别的地方，这里不继续处理)
+
+  /**
+   * 例如：
+   *  target={
+   *      a:{
+   *              value:9
+   *         },
+   *      b:7,
+   *      flag:'no'
+   *  }
+   *  express= "a.value>10 && b< 11 ||flag=='yes'"
+   * 变成数组以后应该是：
+   *
+   * // 比如最后的yes@value表示这是一个最终的值，不需要再计算了
+   * ['a','[@value','value@value',']@value','>@value','10@value','&&@value','b','<@value','||@value','flag','==@value','yes@value']
+   *
+   * 然后，进一步解析得到：
+   * [{value:9},'[','value',']','>',10,'&&',7,'<','||','no','==','yes']
+   *
+   * (当然，我们实际运算的时候，可能和这里不完全一致，这里只是为了方便解释我们的主体思想)
+   *
+   * 然后我们返回上面的结果即可！
+   */
+  // 除了上述原因，统一前置处理还有一个好处就是：
+  // 可以提前对部分语法错误进行报错，方便定位调试
+  // 因为后续的操作越来越复杂，错误越提前越容易定位
+
+  var specialCode1 = ['+', '-', '*', '/', '%', '&', '|', '!', '?', ':', '[', ']', '(', ")", '>', '<', '='];
+  var specialCode2 = ['+', '-', '*', '/', '%', '&', '|', '!', '?', ':', '>', '<', '=', '<=', '>=', '==', '===', '!=', '!=='];
+  function analyseExpress (target, express, scope) {
+    // 剔除开头和结尾的空白
+    express = express.trim();
+    var i = -1,
+        // 当前面对的字符
+    currentChar = null; // 获取下一个字符
+
+    var next = function next() {
+      currentChar = i++ < express.length - 1 ? express[i] : null;
+      return currentChar;
+    }; // 获取往后n个值
+
+
+    var nextNValue = function nextNValue(n) {
+      return express.substring(i, n + i > express.length ? express.length : n + i);
+    };
+
+    next();
+    var expressArray = [];
+
+    while (true) {
+      if (i >= express.length) break; // 先匹配普通的符号
+      // + - * / %
+      // && || !
+      // ? :
+      // [ ] ( )
+      // > < >= <= == === != !==
+      // 如果是&或者|比较特殊
+
+      if (specialCode1.indexOf(currentChar) > -1) {
+        // 对于特殊的符号
+        if (['&', '|', '='].indexOf(currentChar) > -1) {
+          if (['==='].indexOf(nextNValue(3)) > -1) {
+            expressArray.push(nextNValue(3));
+            i += 2;
+            next();
+          } else if (['&&', '||', '=='].indexOf(nextNValue(2)) > -1) {
+            expressArray.push(nextNValue(2));
+            i += 1;
+            next();
+          } else {
+            throw new Error("Illegal expression : " + express + "\nstep='analyseExpress',index=" + i);
+          }
+        } else {
+          // 拦截部分比较特殊的
+          if (['!=='].indexOf(nextNValue(3)) > -1) {
+            expressArray.push(nextNValue(3));
+            i += 2;
+            next();
+          } else if (['>=', '<=', '!='].indexOf(nextNValue(2)) > -1) {
+            expressArray.push(nextNValue(2));
+            i += 1;
+            next();
+          } // 普通的单一的
+          else {
+              expressArray.push(currentChar);
+              next();
+            }
+        }
+      } // 如果是字符串
+      else if (['"', "'"].indexOf(currentChar) > -1) {
+          var temp = "",
+              beginTag = currentChar;
+          next(); // 如果没有遇到结束标签
+          // 目前没有考虑 '\'' 这种带转义字符的情况，当然，'\"'这种是支持的
+          // 后续如果希望支持，优化这里即可
+
+          while (currentChar != beginTag) {
+            if (i >= express.length) {
+              // 如果还没有遇到结束标识就结束了，属于字符串未闭合错误
+              throw new Error("String unclosed error : " + express + "\nstep='analyseExpress',index=" + i);
+            } // 继续拼接
+
+
+            temp += currentChar;
+            next();
+          }
+
+          expressArray.push(temp + "@string");
+          next();
+        } // 如果是数字
+        else if (/\d/.test(currentChar)) {
+            var dotFlag = 'no'; // no表示还没有匹配到.，如果已经匹配到了，标识为yes，如果匹配到了.，可是后面还没有遇到数组，标识为error
+
+            var temp = currentChar;
+            next();
+
+            while (i < express.length) {
+              if (/\d/.test(currentChar)) {
+                temp += currentChar;
+                if (dotFlag == 'error') dotFlag = 'yes';
+              } else if ('.' == currentChar && dotFlag == 'no') {
+                temp += currentChar;
+                dotFlag = 'error';
+              } else {
+                break;
+              }
+
+              next();
+            } // 如果小数点后面没有数字，辅助添加一个0
+
+
+            if (dotFlag == 'error') temp += "0";
+            expressArray.push(+temp);
+          } // 如果是特殊符号
+          // 也就是类似null、undefined等
+          else if (['null', 'true'].indexOf(nextNValue(4)) > -1) {
+              expressArray.push({
+                "null": null,
+                "true": true
+              }[nextNValue(4)]);
+              i += 3;
+              next();
+            } else if (['false'].indexOf(nextNValue(5)) > -1) {
+              expressArray.push({
+                'false': false
+              }[nextNValue(5)]);
+              i += 4;
+              next();
+            } else if (['undefined'].indexOf(nextNValue(9)) > -1) {
+              expressArray.push({
+                "undefined": undefined
+              }[nextNValue(9)]);
+              i += 8;
+              next();
+            } // 如果是空格
+            else if ($RegExp.blankReg.test(currentChar)) {
+                do {
+                  next();
+                } while ($RegExp.blankReg.test(currentChar) && i < express.length);
+              } else {
+                var dot = false; // 对于开头有.进行特殊捕获，因为有.意味着这个值应该可以变成['key']的形式
+                // 这是为了和[key]进行区分，例如：
+                // .key 等价于 ['key'] 翻译成这里就是 ['[','key',']']
+                // 可是[key]就不一样了，翻译成这里以后应该是 ['[','这个值取决当前对象和scope',']']
+                // 如果这里不进行特殊处理，后续区分需要额外的标记，浪费资源
+
+                if (currentChar == '.') {
+                  dot = true;
+                  next();
+                } // 如果是标志符
+
+                /**
+                 *  命名一个标识符时需要遵守如下的规则：
+                 *  1.标识符中可以含有字母 、数字 、下划线_ 、$符号
+                 *  2.标识符不能以数字开头
+                 */
+                // 当然，是不是关键字等我们就不校对了，因为没有太大的实际意义
+                // 也就是类似flag等局部变量
+
+
+                if ($RegExp.identifier.test(currentChar)) {
+                  var len = 1;
+
+                  while (i + len <= express.length && $RegExp.identifier.test(nextNValue(len))) {
+                    len += 1;
+                  }
+
+                  if (dot) {
+                    expressArray.push('[');
+                    expressArray.push(nextNValue(len - 1) + '@string');
+                    expressArray.push(']');
+                  } else {
+                    var tempKey = nextNValue(len - 1); // 如果不是有前置.，那就是需要求解了
+
+                    var tempValue = tempKey in scope ? scope[tempKey] : target[tempKey];
+                    expressArray.push(isString(tempValue) ? tempValue + "@string" : tempValue);
+                  }
+
+                  i += len - 2;
+                  next();
+                } // 都不是，那就是错误
+                else {
+                    throw new Error("Illegal express : " + express + "\nstep='analyseExpress',index=" + i);
+                  }
+              }
+    } // 实际情况是，对于-1等特殊数字，可能存在误把1前面的-号作为运算符的错误，这里拦截校对一下
+
+
+    var length = 0;
+
+    for (var j = 0; j < expressArray.length; j++) {
+      if (["+", "-"].indexOf(expressArray[j]) > -1 && ( // 如果前面的也是运算符或开头，这个应该就不应该是运算符了
+      j == 0 || specialCode2.indexOf(expressArray[length - 1]) > -1)) {
+        expressArray[length++] = +(expressArray[j] + expressArray[j + 1]);
+        j += 1;
+      } else {
+        expressArray[length++] = expressArray[j];
+      }
+    }
+
+    expressArray.length = length;
+    return expressArray;
+  }
+
+  var getExpressValue = function getExpressValue(value) {
+    // 这里是计算的内部，不需要考虑那么复杂的类型
+    if (typeof value == 'string') return value.replace(/@string$/, '');
+    return value;
+  };
+
+  var setExpressValue = function setExpressValue(value) {
+    if (typeof value == 'string') return value + "@string";
+    return value;
+  };
+
+  function evalValue (expressArray) {
+    // 采用按照优先级顺序归约的思想进行
+    // 需要明白，这里不会出现括号
+    // （小括号或者中括号，当然，也不会有函数，这里只会有最简单的表达式）
+    // 这也是我们可以如此归约的前提
+    // + - * / %
+    // && || !
+    // ? :
+    // > < >= <= == === != !==
+    // !
+    // 因为合并以后数组长度一定越来越短，我们直接复用以前的数组即可
+    var length = 0,
+        i = 0;
+
+    for (; i < expressArray.length; i++) {
+      if (expressArray[i] == '!') {
+        // 由于是逻辑运算符，如果是字符串，最后的@string是否去掉已经没有意义了
+        expressArray[length] = !expressArray[++i];
+      } else expressArray[length] = expressArray[i];
+
+      length += 1;
+    }
+
+    if (length == 1) return getExpressValue(expressArray[0]);
+    expressArray.length = length; // * / %
+
+    length = 0;
+
+    for (i = 0; i < expressArray.length; i++) {
+      if (expressArray[i] == '*') {
+        // 假设不知道一定正确，主要是为了节约效率，是否提供错误提示，再议
+        expressArray[length - 1] = getExpressValue(expressArray[length - 1]) * getExpressValue(expressArray[++i]);
+      } else if (expressArray[i] == '/') {
+        expressArray[length - 1] = getExpressValue(expressArray[length - 1]) / getExpressValue(expressArray[++i]);
+      } else if (expressArray[i] == '%') {
+        expressArray[length - 1] = getExpressValue(expressArray[length - 1]) % getExpressValue(expressArray[++i]);
+      } else {
+        // 上面不会导致数组增长
+        expressArray[length++] = expressArray[i];
+      }
+    }
+
+    if (length == 1) return getExpressValue(expressArray[0]);
+    expressArray.length = length; // + -
+
+    length = 0;
+
+    for (i = 0; i < expressArray.length; i++) {
+      if (expressArray[i] == '+') {
+        expressArray[length - 1] = setExpressValue(getExpressValue(expressArray[length - 1]) + getExpressValue(expressArray[++i]));
+      } else if (expressArray[i] == '-') {
+        expressArray[length - 1] = getExpressValue(expressArray[length - 1]) - getExpressValue(expressArray[++i]);
+      } else expressArray[length++] = expressArray[i];
+    }
+
+    if (length == 1) return getExpressValue(expressArray[0]);
+    expressArray.length = length; // > < >= <=
+
+    length = 0;
+
+    for (i = 0; i < expressArray.length; i++) {
+      if (expressArray[i] == '>') {
+        expressArray[length - 1] = getExpressValue(expressArray[length - 1]) > getExpressValue(expressArray[++i]);
+      } else if (expressArray[i] == '<') {
+        expressArray[length - 1] = getExpressValue(expressArray[length - 1]) < getExpressValue(expressArray[++i]);
+      } else if (expressArray[i] == '<=') {
+        expressArray[length - 1] = getExpressValue(expressArray[length - 1]) <= getExpressValue(expressArray[++i]);
+      } else if (expressArray[i] == '>=') {
+        expressArray[length - 1] = getExpressValue(expressArray[length - 1]) >= getExpressValue(expressArray[++i]);
+      } else expressArray[length++] = expressArray[i];
+    }
+
+    if (length == 1) return getExpressValue(expressArray[0]);
+    expressArray.length = length; // == === != !==
+
+    length = 0;
+
+    for (i = 0; i < expressArray.length; i++) {
+      if (expressArray[i] == '==') {
+        expressArray[length - 1] = getExpressValue(expressArray[length - 1]) == getExpressValue(expressArray[++i]);
+      } else if (expressArray[i] == '===') {
+        expressArray[length - 1] = getExpressValue(expressArray[length - 1]) === getExpressValue(expressArray[++i]);
+      } else if (expressArray[i] == '!=') {
+        expressArray[length - 1] = getExpressValue(expressArray[length - 1]) != getExpressValue(expressArray[++i]);
+      } else if (expressArray[i] == '!==') {
+        expressArray[length - 1] = getExpressValue(expressArray[length - 1]) !== getExpressValue(expressArray[++i]);
+      } else expressArray[length++] = expressArray[i];
+    }
+
+    if (length == 1) return getExpressValue(expressArray[0]);
+    expressArray.length = length; // && ||
+
+    length = 0;
+
+    for (i = 0; i < expressArray.length; i++) {
+      if (expressArray[i] == '&&') {
+        expressArray[length - 1] = getExpressValue(expressArray[length - 1]) && getExpressValue(expressArray[1 + i]);
+        i += 1;
+      } else if (expressArray[i] == '||') {
+        expressArray[length - 1] = getExpressValue(expressArray[length - 1]) || getExpressValue(expressArray[1 + i]);
+        i += 1;
+      } else expressArray[length++] = expressArray[i];
+    }
+
+    if (length == 1) return getExpressValue(expressArray[0]);
+    expressArray.length = length; // ?:
+
+    length = 0;
+
+    for (i = 0; i < expressArray.length; i++) {
+      if (expressArray[i] == '?') {
+        expressArray[length - 1] = getExpressValue(expressArray[length - 1]) ? getExpressValue(expressArray[i + 1]) : getExpressValue(expressArray[i + 3]);
+        i += 3;
+      } else expressArray[length++] = expressArray[i];
+    }
+
+    if (length == 1) return getExpressValue(expressArray[0]);
+    expressArray.length = length;
+    throw new Error('Unrecognized expression : [' + expressArray.toString() + "]");
+  }
+
+  function calcValue (target, expressArray, scope) {
+    var value = expressArray[0] in scope ? scope[expressArray[0]] : target[expressArray[0]];
+
+    for (var i = 1; i < expressArray.length; i++) {
+      try {
+        value = value[expressArray[i]];
+      } catch (e) {
+        console.error({
+          target: target,
+          scope: scope,
+          expressArray: expressArray,
+          index: i
+        });
+        throw e;
+      }
+    }
+
+    return value;
+  }
+
+  var doit1 = function doit1(target, expressArray, scope) {
+    // 先消小括号
+    // 其实也就是归约小括号
+    if (expressArray.indexOf('(') > -1) {
+      var newExpressArray = [],
+          temp = [],
+          // 0表示还没有遇到左边的小括号
+      // 1表示遇到了一个，以此类推，遇到一个右边的会减1
+      flag = 0;
+
+      for (var i = 0; i < expressArray.length; i++) {
+        if (expressArray[i] == '(') {
+          if (flag > 0) {
+            // 说明这个应该是需要计算的括号里面的括号
+            temp.push('(');
+          }
+
+          flag += 1;
+        } else if (expressArray[i] == ')') {
+          if (flag > 1) temp.push(')');
+          flag -= 1; // 为0说明主的小括号归约结束了
+
+          if (flag == 0) {
+            var _value = evalValue(doit1(target, temp));
+
+            newExpressArray.push(isString(_value) ? _value + '@string' : _value);
+            temp = [];
+          }
+        } else {
+          if (flag > 0) temp.push(expressArray[i]);else newExpressArray.push(expressArray[i]);
+        }
+      }
+
+      expressArray = newExpressArray;
+    } // 去掉小括号以后，调用中括号去掉方法
+
+
+    return doit2(expressArray);
+  }; // 中括号嵌套去掉方法
+
+
+  var doit2 = function doit2(expressArray) {
+    var hadMore = true;
+
+    while (hadMore) {
+      hadMore = false;
+      var newExpressArray = [],
+          temp = [],
+          // 如果为true表示当前在试探寻找归约最小单元的结束
+      flag = false; // 开始寻找里面需要归约的最小单元（也就是可以立刻获取值的）
+
+      for (var i = 0; i < expressArray.length; i++) {
+        // 这说明这是一个需要归约的
+        // 不过不一定是最小单元
+        // 遇到了，先记下了
+        if (expressArray[i] == '[' && i != 0 && expressArray[i - 1] != ']') {
+          if (flag) {
+            // 如果之前已经遇到了，说明之前保存的是错误的，需要同步会主数组
+            newExpressArray.push('[');
+
+            for (var j = 0; j < temp.length; j++) {
+              newExpressArray.push(temp[j]);
+            }
+          } else {
+            // 如果之前没有遇到，修改标记即可
+            flag = true;
+          }
+
+          temp = [];
+        } // 如果遇到了结束，这说明当前暂存的就是最小归结单元
+        // 计算后放回主数组
+        else if (expressArray[i] == ']' && flag) {
+            hadMore = true; // 计算
+
+            var tempValue = evalValue(temp);
+            var _value = newExpressArray[newExpressArray.length - 1][tempValue];
+            newExpressArray[newExpressArray.length - 1] = isString(_value) ? _value + "@string" : _value; // 状态恢复
+
+            flag = false;
+          } else {
+            if (flag) {
+              temp.push(expressArray[i]);
+            } else {
+              newExpressArray.push(expressArray[i]);
+            }
+          }
+      }
+
+      expressArray = newExpressArray;
+    }
+
+    return expressArray;
+  }; // 路径
+  // ["[",express,"]","[",express"]","[",express,"]"]
+  // 变成
+  // [express][express][express]
+
+
+  var doit3 = function doit3(expressArray) {
+    var newExpressArray = [],
+        temp = [];
+
+    for (var i = 0; i < expressArray.length; i++) {
+      if (expressArray[i] == '[') {
+        temp = [];
+      } else if (expressArray[i] == ']') {
+        newExpressArray.push(evalValue(temp));
+      } else {
+        temp.push(expressArray[i]);
+      }
+    }
+
+    return newExpressArray;
+  }; // 获取路径数组(核心是归约的思想)
+
+
+  function toPath(target, expressArray, scope) {
+    var newExpressArray = doit1(target, expressArray); // 其实无法就三类
+    // 第一类：[express][express][express]express
+    // 第二类：express
+    // 第三类：[express][express][express]
+
+    var path; // 第二类
+
+    if (newExpressArray[0] != '[') {
+      path = [evalValue(newExpressArray)];
+    } // 第三类
+    else if (newExpressArray[newExpressArray.length - 1] == ']') {
+        path = doit3(newExpressArray);
+      } // 第一类
+      else {
+          var lastIndex = newExpressArray.lastIndexOf(']');
+          var tempPath = doit3(newExpressArray.slice(0, lastIndex + 1));
+          var tempArray = newExpressArray.slice(lastIndex + 1);
+          tempArray.unshift(calcValue(target, tempPath, scope));
+          path = [evalValue(tempArray)];
+        }
+
+    return path;
+  }
+
+  /*!
+   * 🔪 - 设置或获取指定对象上字符串表达式对应的值
+   * https://github.com/hai2007/algorithm.js/blob/master/value.js
+   *
+   * author hai2007 < https://hai2007.gitee.io/sweethome >
+   *
+   * Copyright (c) 2020-present hai2007 走一步，再走一步。
+   * Released under the MIT license
+   */
+  /**
+   * express举例子：
+   *
+   * [00]  ["a"].b[c]
+   * [01]  a
+   * [02]  [0]['value-index'][index+1]
+   *
+   * 如果是getValue,express还可以包含运算符：
+   *  + - * / %  数值运算符
+   *  && || !    逻辑运算符
+   *
+   * [03]  flag+10
+   * [04]  a.b[index+1]-10
+   * [05]  (a+b)/10-c[d]
+   * [06]  [((a+b)-c)*f]+d
+   *
+   * [07]  !flag
+   * [08]  (a>0 && b<=1) || !flag
+   * [09]  '(flag)' == "("+temp+")"
+   * [10]  a>10?"flag1":"flag2"
+   *
+   */
+  // 解析一段表达式
+
+  var evalExpress = function evalExpress(target, express, scope) {
+    if (arguments.length < 3) scope = {};
+    var expressArray = analyseExpress(target, express, scope);
+    var path = toPath(target, expressArray, scope); // 如果不是表达式
+
+    if (path.length > 1) throw new Error("Illegal expression : " + express + "\nstep='evalExpress',path=" + path + ",expressArray=" + expressArray);
+    return path[0];
+  }; // 获取
+
   function mountComponent(target, Component, module) {
     var component = new Component();
 
@@ -890,7 +1450,11 @@
           var directiveInstance = _step.value;
 
           if (isFunction(directiveInstance.instance.$update)) {
-            directiveInstance.instance.$update(directiveInstance.el);
+            directiveInstance.instance.$update(directiveInstance.el, {
+              type: directiveInstance.type,
+              exp: directiveInstance.exp,
+              value: evalExpress(component, directiveInstance.exp)
+            });
           }
         }
       } catch (err) {
@@ -941,20 +1505,29 @@
             el = document.createElement(vnode.name);
 
             for (var attrKey in vnode.attrs) {
-              // 指令
-              if (attrKey in module.__directive__) {
+              var attrKeys = (attrKey + ":").split(':'); // 指令
+
+              if (attrKeys[0] in module.__directive__) {
                 (function () {
-                  var directiveInstance = new module.__directive__[attrKey]();
+                  var directiveInstance = new module.__directive__[attrKeys[0]]();
+                  var type = attrKeys[1];
+                  var exp = vnode.attrs[attrKey];
 
                   if (isFunction(directiveInstance.$inserted)) {
                     setTimeout(function () {
-                      directiveInstance.$inserted(el);
+                      directiveInstance.$inserted(el, {
+                        type: type,
+                        exp: exp,
+                        value: evalExpress(component, exp)
+                      });
                     });
                   }
 
                   component.__directives.push({
                     instance: directiveInstance,
-                    el: el
+                    el: el,
+                    type: type,
+                    exp: exp
                   });
                 })();
               } // 普通属性

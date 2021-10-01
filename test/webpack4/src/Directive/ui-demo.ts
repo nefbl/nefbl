@@ -4,10 +4,10 @@ import { Directive } from 'nefbl';
     selector: "ui-demo"
 })
 export default class {
-    $inserted(el) {
-        console.log('第一次在页面生效', el);
+    $inserted(el, binding) {
+        console.log('第一次在页面生效', el, binding);
     }
-    $update(el) {
-        console.log('数据更新导致的执行', el);
+    $update(el, binding) {
+        console.log('数据更新导致的执行', el, binding);
     }
 };
