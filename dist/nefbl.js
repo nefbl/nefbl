@@ -10,7 +10,7 @@
  * Copyright (c) 2021-2021 hai2007 走一步，再走一步。
  * Released under the MIT license
  *
- * Date:Wed Sep 29 2021 17:52:01 GMT+0800 (中国标准时间)
+ * Date:Fri Oct 01 2021 09:14:23 GMT+0800 (中国标准时间)
  */
 (function () {
   'use strict';
@@ -110,9 +110,12 @@
    */
   function Module (config) {
     var component = {},
-        service = [],
         directive = {};
-    var bootstrapComponent = null; // 分析出服务，指令和组件
+    var bootstrapComponent = null;
+    var exports = {
+      component: {},
+      directive: {}
+    }; // 分析出服务，指令和组件
 
     var _iterator = _createForOfIteratorHelper(config.declarations),
         _step;
@@ -120,35 +123,90 @@
     try {
       for (_iterator.s(); !(_step = _iterator.n()).done;) {
         var Item = _step.value;
+        var needExports = false; // 判断是否需要暴露
 
-        // 组件
+        /**
+         * 为什么这里暴露出去的需要从declarations中取？
+         * 因为考虑到后期改造的时候，可能新增一些需要在本模块实例化等，
+         * 这样的好处是保罗出去的和内置使用的保持一致，不会乱。
+         */
+
+        var _iterator3 = _createForOfIteratorHelper(config.exports),
+            _step3;
+
+        try {
+          for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+            var ExportItem = _step3.value;
+
+            if (ExportItem === Item) {
+              needExports = true;
+              break;
+            }
+          } // 组件
+
+        } catch (err) {
+          _iterator3.e(err);
+        } finally {
+          _iterator3.f();
+        }
+
         if (Item.prototype.__type__ == "Component") {
           component[Item.prototype.__selector__] = Item; // bootstrap用于标记启动组件
 
           if (config.bootstrap === Item) {
             bootstrapComponent = Item;
           }
+
+          if (needExports) {
+            exports.component[Item.prototype.__selector__] = Item;
+          }
         } // 指令
         else if (Item.prototype.__type__ == "Directive") {
             directive[Item.prototype.__selector__] = Item;
-          } // 服务
-          else if (Item.prototype.__type__ == "Service") {
-              service.push(new Item());
+
+            if (needExports) {
+              exports.directive[Item.prototype.__selector__] = Item;
             }
-      }
+          }
+      } // 分析导入的模块
+
     } catch (err) {
       _iterator.e(err);
     } finally {
       _iterator.f();
     }
 
+    var _iterator2 = _createForOfIteratorHelper(config.imports),
+        _step2;
+
+    try {
+      for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+        var module = _step2.value;
+
+        // 组件
+        for (var key in module.prototype.__exports__.component) {
+          component[key] = module.prototype.__exports__.component[key];
+        } // 指令
+
+
+        for (var _key in module.prototype.__exports__.directive) {
+          directive[_key] = module.prototype.__exports__.directive[_key];
+        }
+      }
+    } catch (err) {
+      _iterator2.e(err);
+    } finally {
+      _iterator2.f();
+    }
+
     return function (target) {
       // 对象类型标记
-      target.prototype.__type__ = 'Module'; // 登记所有的指令、组件和服务（包括依赖的模块的）
+      target.prototype.__type__ = 'Module'; // 登记所有的指令、组件（包括依赖的模块的）
 
       target.prototype.__component__ = component;
-      target.prototype.__directive__ = directive;
-      target.prototype.__service__ = service; // 可能还有启动组件
+      target.prototype.__directive__ = directive; // 暴露出去的
+
+      target.prototype.__exports__ = exports; // 可能还有启动组件
 
       target.prototype.__bootstrapComponent__ = bootstrapComponent;
     };
@@ -734,9 +792,7 @@
 
   // 用于挂载组件
   function mountComponent(target, Component, module) {
-    var component = new Component();
-    console.log(Component);
-    console.log(Component.construct); // 记录子组件
+    var component = new Component(); // 记录子组件
 
     component.__children = [];
     var templateObj = component.__template__;

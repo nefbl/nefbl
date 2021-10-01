@@ -4,8 +4,6 @@
 export default function mountComponent(target, Component, module) {
 
     let component = new Component();
-    console.log(Component);
-    console.log(Component.construct);
 
     // 记录子组件
     component.__children = [];

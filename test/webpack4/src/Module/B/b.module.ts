@@ -1,9 +1,10 @@
 import { Module } from 'nefbl';
+import B1App from './b1.app';
 
 @Module({
 
     declarations: [
-
+        B1App
     ],
 
     imports: [
@@ -11,7 +12,7 @@ import { Module } from 'nefbl';
     ],
 
     exports: [
-
+        B1App
     ]
 
 })
