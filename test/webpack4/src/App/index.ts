@@ -10,6 +10,8 @@ import template from './index.html';
 })
 export default class {
 
+    infoObj: any;
+
     $setup() {
 
         // reactive
@@ -34,7 +36,7 @@ export default class {
             doit() {
                 this.info = Math.random();
             },
-            doit2(){
+            doit2() {
                 alert('你点击了我');
             }
         };
@@ -44,6 +46,9 @@ export default class {
     // 生命周期钩子
     $mounted() {
         // console.log('挂载完毕', this);
+
+        // console.log((this as any).info);
+        // console.log(this.infoObj);
     }
     $beforeUpdate() {
         // console.log('更新前', this);

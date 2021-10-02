@@ -5,12 +5,12 @@
  *
  * author 你好2007 < https://hai2007.gitee.io/sweethome >
  *
- * version 0.1.0
+ * version 0.1.1
  *
  * Copyright (c) 2021-2021 hai2007 走一步，再走一步。
  * Released under the MIT license
  *
- * Date:Fri Oct 01 2021 20:12:29 GMT+0800 (中国标准时间)
+ * Date:Sat Oct 02 2021 22:57:06 GMT+0800 (中国标准时间)
  */
 (function () {
   'use strict';
@@ -29,6 +29,55 @@
     }
 
     return _typeof(obj);
+  }
+
+  function _defineProperty(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+
+    return obj;
+  }
+
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      if (enumerableOnly) symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+      keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i] != null ? arguments[i] : {};
+
+      if (i % 2) {
+        ownKeys(Object(source), true).forEach(function (key) {
+          _defineProperty(target, key, source[key]);
+        });
+      } else if (Object.getOwnPropertyDescriptors) {
+        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+      } else {
+        ownKeys(Object(source)).forEach(function (key) {
+          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+        });
+      }
+    }
+
+    return target;
   }
 
   function _unsupportedIterableToArray(o, minLen) {
@@ -1578,7 +1627,14 @@
     var rootComponent = null;
     return {
       bootstrap: function bootstrap(Module) {
-        var module = new Module(); // 通过启动组件，启动
+        var module = new Module(); // 在所有的指令和组件中登记所在模块
+
+        var allList = _objectSpread2(_objectSpread2({}, module.__component__), module.__directive__);
+
+        for (var key in allList) {
+          allList[key].prototype._module = module;
+        } // 通过启动组件，启动
+
 
         rootComponent = mountComponent(options.el, module.__bootstrapComponent__, module);
       }
@@ -1617,6 +1673,7 @@
     Directive: Directive,
     // 核心方法
     platform: platform,
+    mountComponent: mountComponent,
     // 暴露的一些有用的方法
     ref: ref,
     reactive: reactive

@@ -12,12 +12,17 @@ import uiDemo from './Directive/ui-demo';
 import ModuleA from './Module/A/a.module';
 import ModuleB from './Module/B/b.module';
 
+// 测试懒加载组件
+import LazyComponent from './Lazy/index';
+import lazy from './Lazy/lazy';
+
 @Module({
 
     // 声明本模块具有的组件，指令
     // 【组件，指令】在本模块的任何地方，都可以直接使用
     declarations: [
-        AppComponent, uiDemo, Sub1, Sub2
+        AppComponent, uiDemo, Sub1, Sub2,
+        LazyComponent, lazy
     ],
 
     // 在这里引入别的模块，
