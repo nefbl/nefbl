@@ -6,3 +6,7 @@ v0.1.1:
     date:2021-10-02
     changes:
       -  新增全局方法mountComponent和属性_module
+v0.1.2:
+    date:2021-10-02
+    changes:
+      -  指令binding新增target，表示当前组件对象实例

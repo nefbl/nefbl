@@ -5,12 +5,12 @@
  *
  * author 你好2007 < https://hai2007.gitee.io/sweethome >
  *
- * version 0.1.1
+ * version 0.1.2
  *
  * Copyright (c) 2021-2021 hai2007 走一步，再走一步。
  * Released under the MIT license
  *
- * Date:Sat Oct 02 2021 22:57:06 GMT+0800 (中国标准时间)
+ * Date:Sat Oct 02 2021 23:15:57 GMT+0800 (中国标准时间)
  */
 (function () {
   'use strict';
@@ -1502,7 +1502,8 @@
             directiveInstance.instance.$update(directiveInstance.el, {
               type: directiveInstance.type,
               exp: directiveInstance.exp,
-              value: evalExpress(component, directiveInstance.exp)
+              value: evalExpress(component, directiveInstance.exp),
+              target: component
             });
           }
         }
@@ -1567,7 +1568,8 @@
                       directiveInstance.$inserted(el, {
                         type: type,
                         exp: exp,
-                        value: evalExpress(component, exp)
+                        value: evalExpress(component, exp),
+                        target: component
                       });
                     });
                   }
