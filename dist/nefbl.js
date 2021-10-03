@@ -5,12 +5,12 @@
  *
  * author 你好2007 < https://hai2007.gitee.io/sweethome >
  *
- * version 0.1.2
+ * version 0.1.3
  *
  * Copyright (c) 2021-2021 hai2007 走一步，再走一步。
  * Released under the MIT license
  *
- * Date:Sat Oct 02 2021 23:15:57 GMT+0800 (中国标准时间)
+ * Date:Sun Oct 03 2021 11:30:06 GMT+0800 (中国标准时间)
  */
 (function () {
   'use strict';
@@ -1639,6 +1639,12 @@
 
 
         rootComponent = mountComponent(options.el, module.__bootstrapComponent__, module);
+        return {
+          // 根组件
+          rootComponent: rootComponent,
+          // 当前模块对象
+          module: module
+        };
       }
     };
   }
@@ -1676,6 +1682,7 @@
     // 核心方法
     platform: platform,
     mountComponent: mountComponent,
+    evalExpress: evalExpress,
     // 暴露的一些有用的方法
     ref: ref,
     reactive: reactive

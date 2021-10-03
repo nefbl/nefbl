@@ -13,7 +13,7 @@ import Component from './decorators/Component';
 import Directive from './decorators/Directive';
 
 /**
- * 核心方法
+ * 方法
  */
 
 // 平台实例工厂
@@ -21,6 +21,9 @@ import platform from './platform';
 
 // 挂载组件方法
 import mountComponent from './component/mountComponent';
+
+// 解析表达式上值的方法
+import { evalExpress } from '@hai2007/algorithm/value';
 
 /**
  * 双向绑定
@@ -43,6 +46,7 @@ let Nefbl = {
     // 核心方法
     platform,
     mountComponent,
+    evalExpress,
 
     // 暴露的一些有用的方法
     ref,

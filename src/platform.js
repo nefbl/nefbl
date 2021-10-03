@@ -23,6 +23,15 @@ export default function (options) {
             // 通过启动组件，启动
             rootComponent = mountComponent(options.el, module.__bootstrapComponent__, module);
 
+            return {
+
+                // 根组件
+                rootComponent,
+
+                // 当前模块对象
+                module
+            };
+
         }
     };
 

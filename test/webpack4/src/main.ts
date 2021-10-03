@@ -9,7 +9,7 @@ import normalize from "@hai2007/style/normalize.css";
 import appModule from "./app.module";
 
 // 先获取平台实例
-platform({
+let nefbl = platform({
 
     // 框架管理的区域
     el: document.getElementById('root'),
@@ -21,3 +21,5 @@ platform({
 
     // 然后启动主模块
     .bootstrap(appModule);
+
+console.log(nefbl);
