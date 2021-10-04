@@ -5,12 +5,12 @@
  *
  * author 你好2007 < https://hai2007.gitee.io/sweethome >
  *
- * version 0.1.3
+ * version 0.1.4
  *
  * Copyright (c) 2021-2021 hai2007 走一步，再走一步。
  * Released under the MIT license
  *
- * Date:Sun Oct 03 2021 11:30:06 GMT+0800 (中国标准时间)
+ * Date:Mon Oct 04 2021 13:17:27 GMT+0800 (中国标准时间)
  */
 (function () {
   'use strict';
@@ -155,121 +155,6 @@
   }
 
   /**
-   * 模块
-   */
-  function Module (config) {
-    var component = {},
-        directive = {};
-    var bootstrapComponent = null;
-    var exports = {
-      component: {},
-      directive: {}
-    }; // 分析出服务，指令和组件
-
-    var _iterator = _createForOfIteratorHelper(config.declarations),
-        _step;
-
-    try {
-      for (_iterator.s(); !(_step = _iterator.n()).done;) {
-        var Item = _step.value;
-        var needExports = false; // 判断是否需要暴露
-
-        /**
-         * 为什么这里暴露出去的需要从declarations中取？
-         * 因为考虑到后期改造的时候，可能新增一些需要在本模块实例化等，
-         * 这样的好处是保罗出去的和内置使用的保持一致，不会乱。
-         */
-
-        var _iterator3 = _createForOfIteratorHelper(config.exports),
-            _step3;
-
-        try {
-          for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
-            var ExportItem = _step3.value;
-
-            if (ExportItem === Item) {
-              needExports = true;
-              break;
-            }
-          } // 组件
-
-        } catch (err) {
-          _iterator3.e(err);
-        } finally {
-          _iterator3.f();
-        }
-
-        if (Item.prototype.__type__ == "Component") {
-          component[Item.prototype.__selector__] = Item; // bootstrap用于标记启动组件
-
-          if (config.bootstrap === Item) {
-            bootstrapComponent = Item;
-          }
-
-          if (needExports) {
-            exports.component[Item.prototype.__selector__] = Item;
-          }
-        } // 指令
-        else if (Item.prototype.__type__ == "Directive") {
-            directive[Item.prototype.__selector__] = Item;
-
-            if (needExports) {
-              exports.directive[Item.prototype.__selector__] = Item;
-            }
-          }
-      } // 分析导入的模块
-
-    } catch (err) {
-      _iterator.e(err);
-    } finally {
-      _iterator.f();
-    }
-
-    var _iterator2 = _createForOfIteratorHelper(config.imports),
-        _step2;
-
-    try {
-      for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-        var module = _step2.value;
-
-        // 组件
-        for (var key in module.prototype.__exports__.component) {
-          component[key] = module.prototype.__exports__.component[key];
-        } // 指令
-
-
-        for (var _key in module.prototype.__exports__.directive) {
-          directive[_key] = module.prototype.__exports__.directive[_key];
-        }
-      }
-    } catch (err) {
-      _iterator2.e(err);
-    } finally {
-      _iterator2.f();
-    }
-
-    return function (target) {
-      // 对象类型标记
-      target.prototype.__type__ = 'Module'; // 登记所有的指令、组件（包括依赖的模块的）
-
-      target.prototype.__component__ = component;
-      target.prototype.__directive__ = directive; // 暴露出去的
-
-      target.prototype.__exports__ = exports; // 可能还有启动组件
-
-      target.prototype.__bootstrapComponent__ = bootstrapComponent;
-    };
-  }
-
-  var $RegExp = {
-    // 空白字符:http://www.w3.org/TR/css3-selectors/#whitespace
-    blankReg: new RegExp("[\\x20\\t\\r\\n\\f]"),
-    blanksReg: /^[\x20\t\r\n\f]{0,}$/,
-    // 标志符
-    identifier: /^[a-zA-Z_$][0-9a-zA-Z_$]{0,}$/
-  };
-
-  /**
    * 判断一个值是不是Object。
    *
    * @param {*} value 需要判断类型的值
@@ -343,6 +228,131 @@
   var isFunction = _isFunction;
   var isArray = function isArray(input) {
     return Array.isArray(input);
+  };
+
+  /**
+   * 模块
+   */
+
+  function Module () {
+    var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    var component = {},
+        directive = {};
+    var bootstrapComponent = null;
+    var exports = {
+      component: {},
+      directive: {}
+    };
+
+    if (isArray(config.declarations)) {
+      // 分析出指令和组件
+      var _iterator = _createForOfIteratorHelper(config.declarations),
+          _step;
+
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var Item = _step.value;
+          var needExports = false;
+
+          if (isArray(config.exports)) {
+            // 判断是否需要暴露
+
+            /**
+             * 为什么这里暴露出去的需要从declarations中取？
+             * 因为考虑到后期改造的时候，可能新增一些需要在本模块实例化等，
+             * 这样的好处是保罗出去的和内置使用的保持一致，不会乱。
+             */
+            var _iterator2 = _createForOfIteratorHelper(config.exports),
+                _step2;
+
+            try {
+              for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+                var ExportItem = _step2.value;
+
+                if (ExportItem === Item) {
+                  needExports = true;
+                  break;
+                }
+              }
+            } catch (err) {
+              _iterator2.e(err);
+            } finally {
+              _iterator2.f();
+            }
+          } // 组件
+
+
+          if (Item.prototype.__type__ == "Component") {
+            component[Item.prototype.__selector__] = Item; // bootstrap用于标记启动组件
+
+            if (config.bootstrap === Item) {
+              bootstrapComponent = Item;
+            }
+
+            if (needExports) {
+              exports.component[Item.prototype.__selector__] = Item;
+            }
+          } // 指令
+          else if (Item.prototype.__type__ == "Directive") {
+              directive[Item.prototype.__selector__] = Item;
+
+              if (needExports) {
+                exports.directive[Item.prototype.__selector__] = Item;
+              }
+            }
+        }
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
+      }
+    }
+
+    if (isArray(config.imports)) {
+      // 分析导入的模块
+      var _iterator3 = _createForOfIteratorHelper(config.imports),
+          _step3;
+
+      try {
+        for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+          var module = _step3.value;
+
+          // 组件
+          for (var key in module.prototype.__exports__.component) {
+            component[key] = module.prototype.__exports__.component[key];
+          } // 指令
+
+
+          for (var _key in module.prototype.__exports__.directive) {
+            directive[_key] = module.prototype.__exports__.directive[_key];
+          }
+        }
+      } catch (err) {
+        _iterator3.e(err);
+      } finally {
+        _iterator3.f();
+      }
+    }
+
+    return function (target) {
+      // 对象类型标记
+      target.prototype.__type__ = 'Module'; // 登记所有的指令、组件（包括依赖的模块的）
+
+      target.prototype.__component__ = component;
+      target.prototype.__directive__ = directive; // 暴露出去的
+
+      target.prototype.__exports__ = exports; // 可能还有启动组件
+
+      target.prototype.__bootstrapComponent__ = bootstrapComponent;
+    };
+  }
+
+  var $RegExp = {
+    // 空白字符:http://www.w3.org/TR/css3-selectors/#whitespace
+    blankReg: new RegExp("[\\x20\\t\\r\\n\\f]"),
+    blanksReg: /^[\x20\t\r\n\f]{0,}$/,
+    // 标志符
+    identifier: /^[a-zA-Z_$][0-9a-zA-Z_$]{0,}$/
   };
 
   function analyseTag (attrString) {
