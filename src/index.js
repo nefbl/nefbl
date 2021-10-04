@@ -23,7 +23,7 @@ import platform from './platform';
 import mountComponent from './component/mountComponent';
 
 // 解析表达式上值的方法
-import { evalExpress } from '@hai2007/algorithm/value';
+import { evalExpress, getValue, setValue } from '@hai2007/algorithm/value';
 
 /**
  * 双向绑定
@@ -47,6 +47,8 @@ let Nefbl = {
     platform,
     mountComponent,
     evalExpress,
+    getValue,
+    setValue,
 
     // 暴露的一些有用的方法
     ref,

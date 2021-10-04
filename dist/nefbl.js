@@ -5,12 +5,12 @@
  *
  * author 你好2007 < https://hai2007.gitee.io/sweethome >
  *
- * version 0.1.4
+ * version 0.2.0
  *
  * Copyright (c) 2021-2021 hai2007 走一步，再走一步。
  * Released under the MIT license
  *
- * Date:Mon Oct 04 2021 13:17:27 GMT+0800 (中国标准时间)
+ * Date:Mon Oct 04 2021 17:48:54 GMT+0800 (中国标准时间)
  */
 (function () {
   'use strict';
@@ -1495,6 +1495,30 @@
     return path[0];
   }; // 获取
 
+  var getValue = function getValue(target, express, scope) {
+    if (arguments.length < 3) scope = {};
+    var expressArray = analyseExpress(target, express, scope);
+    var path = toPath(target, expressArray, scope);
+    return calcValue(target, path, scope);
+  }; // 设置
+
+  var setValue = function setValue(target, express, value, scope) {
+    if (arguments.length < 3) scope = {};
+    var expressArray = analyseExpress(target, express, scope);
+    var path = toPath(target, expressArray, scope);
+    var _target = target;
+
+    for (var i = 0; i < path.length - 1; i++) {
+      // 如果需要补充
+      if (!(path[i] in _target)) _target[path[i]] = isArray(_target) ? [] : {}; // 拼接下一个
+
+      _target = _target[path[i]];
+    }
+
+    _target[path[path.length - 1]] = value;
+    return target;
+  };
+
   function mountComponent(target, Component, module) {
     var component = new Component();
 
@@ -1693,6 +1717,8 @@
     platform: platform,
     mountComponent: mountComponent,
     evalExpress: evalExpress,
+    getValue: getValue,
+    setValue: setValue,
     // 暴露的一些有用的方法
     ref: ref,
     reactive: reactive

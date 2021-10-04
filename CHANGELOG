@@ -20,3 +20,7 @@ v0.1.4:
     date:2021-10-04
     changes:
       -  优化模块的一些健壮性判断
+v0.2.0:
+    date:2021-10-04
+    changes:
+      -  新增getValue和setValue方法
