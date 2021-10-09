@@ -6,10 +6,12 @@ export default function (component, data, key, doback) {
         },
         set(_target, _key, _value) {
 
+            let flag = Reflect.set(_target, _key, _value);
+
             // 回调通知组件更新
             doback();
 
-            return Reflect.set(_target, _key, _value);
+            return flag;
 
         }
     });

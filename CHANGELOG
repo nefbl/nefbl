@@ -24,3 +24,7 @@ v0.2.0:
     date:2021-10-04
     changes:
       -  新增getValue和setValue方法
+v0.2.1:
+    date:2021-10-09
+    changes:
+      -  修复proxy渲染和设置时机问题
