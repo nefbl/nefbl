@@ -5,12 +5,12 @@
  *
  * author 你好2007 < https://hai2007.gitee.io/sweethome >
  *
- * version 0.2.1
+ * version 0.2.2
  *
  * Copyright (c) 2021-2021 hai2007 走一步，再走一步。
  * Released under the MIT license
  *
- * Date:Sat Oct 09 2021 17:51:36 GMT+0800 (中国标准时间)
+ * Date:Mon Oct 11 2021 09:46:03 GMT+0800 (中国标准时间)
  */
 (function () {
   'use strict';
@@ -1522,33 +1522,40 @@
 
   function mountComponent(target, Component, module) {
     var component = new Component();
+    var hadWillUpdate = false;
 
     var observeFunction = function observeFunction() {
-      if (isFunction(component.$beforeUpdate)) component.$beforeUpdate(); // 触发指令
+      if (!hadWillUpdate) {
+        hadWillUpdate = true;
+        setTimeout(function () {
+          if (isFunction(component.$beforeUpdate)) component.$beforeUpdate(); // 触发指令
 
-      var _iterator = _createForOfIteratorHelper(component.__directives),
-          _step;
+          var _iterator = _createForOfIteratorHelper(component.__directives),
+              _step;
 
-      try {
-        for (_iterator.s(); !(_step = _iterator.n()).done;) {
-          var directiveInstance = _step.value;
+          try {
+            for (_iterator.s(); !(_step = _iterator.n()).done;) {
+              var directiveInstance = _step.value;
 
-          if (isFunction(directiveInstance.instance.$update)) {
-            directiveInstance.instance.$update(directiveInstance.el, {
-              type: directiveInstance.type,
-              exp: directiveInstance.exp,
-              value: evalExpress(component, directiveInstance.exp),
-              target: component
-            });
+              if (isFunction(directiveInstance.instance.$update)) {
+                directiveInstance.instance.$update(directiveInstance.el, {
+                  type: directiveInstance.type,
+                  exp: directiveInstance.exp,
+                  value: evalExpress(component, directiveInstance.exp),
+                  target: component
+                });
+              }
+            }
+          } catch (err) {
+            _iterator.e(err);
+          } finally {
+            _iterator.f();
           }
-        }
-      } catch (err) {
-        _iterator.e(err);
-      } finally {
-        _iterator.f();
-      }
 
-      if (isFunction(component.$updated)) component.$updated();
+          if (isFunction(component.$updated)) component.$updated();
+          hadWillUpdate = false;
+        }, 0);
+      }
     };
 
     if (isFunction(component.$setup)) {

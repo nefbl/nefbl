@@ -11,6 +11,7 @@ import template from './index.html';
 export default class {
 
     infoObj: any;
+    info:any;
 
     $setup() {
 
@@ -25,10 +26,10 @@ export default class {
 
         let info = ref(1);
 
-        setTimeout(() => {
-            info.value = 10;
-            infoObj.value.key1 = 11;
-        }, 1000);
+        // setTimeout(() => {
+        //     info.value = 10;
+        //     infoObj.value.key1 = 11;
+        // }, 1000);
 
         return {
             infoObj,
@@ -49,12 +50,18 @@ export default class {
 
         // console.log((this as any).info);
         // console.log(this.infoObj);
+        // this.info=1;
+        this.info=2;
+
+        // this.infoObj.key1=10
+        // this.infoObj=reactive({})
+
     }
     $beforeUpdate() {
-        // console.log('更新前', this);
+        console.log('更新前', this.infoObj);
     }
     $updated() {
-        // console.log('更新后', this);
+        console.log('更新后', this.infoObj.key1);
     }
 
 };

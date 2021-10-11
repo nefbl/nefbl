@@ -10,24 +10,34 @@ export default function mountComponent(target, Component, module) {
 
     let component = new Component();
 
+    let hadWillUpdate = false;
+
     let observeFunction = () => {
-        if (isFunction(component.$beforeUpdate)) component.$beforeUpdate();
+        if (!hadWillUpdate) {
+            hadWillUpdate = true;
 
-        // 触发指令
-        for (let directiveInstance of component.__directives) {
-            if (isFunction(directiveInstance.instance.$update)) {
+            setTimeout(() => {
+                if (isFunction(component.$beforeUpdate)) component.$beforeUpdate();
 
-                directiveInstance.instance.$update(directiveInstance.el, {
-                    type: directiveInstance.type,
-                    exp: directiveInstance.exp,
-                    value: evalExpress(component, directiveInstance.exp),
-                    target: component
-                });
+                // 触发指令
+                for (let directiveInstance of component.__directives) {
+                    if (isFunction(directiveInstance.instance.$update)) {
 
-            }
+                        directiveInstance.instance.$update(directiveInstance.el, {
+                            type: directiveInstance.type,
+                            exp: directiveInstance.exp,
+                            value: evalExpress(component, directiveInstance.exp),
+                            target: component
+                        });
+
+                    }
+                }
+
+                if (isFunction(component.$updated)) component.$updated();
+
+                hadWillUpdate = false;
+            }, 0);
         }
-
-        if (isFunction(component.$updated)) component.$updated();
     };
 
     if (isFunction(component.$setup)) {
