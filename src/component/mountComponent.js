@@ -26,7 +26,7 @@ export default function mountComponent(target, Component, module) {
                         directiveInstance.instance.$update(directiveInstance.el, {
                             type: directiveInstance.type,
                             exp: directiveInstance.exp,
-                            value: evalExpress(component, directiveInstance.exp),
+                            value: directiveInstance.exp ? evalExpress(component, directiveInstance.exp) : undefined,
                             target: component
                         });
 
@@ -110,7 +110,7 @@ export default function mountComponent(target, Component, module) {
                                 directiveInstance.$inserted(el, {
                                     type,
                                     exp,
-                                    value: evalExpress(component, exp),
+                                    value: exp ? evalExpress(component, exp) : undefined,
                                     target: component
                                 });
                             });
