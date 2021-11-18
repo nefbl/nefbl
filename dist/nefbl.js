@@ -5,12 +5,12 @@
  *
  * author 你好2007 < https://hai2007.gitee.io/sweethome >
  *
- * version 0.2.4
+ * version 0.2.5
  *
  * Copyright (c) 2021-2021 hai2007 走一步，再走一步。
  * Released under the MIT license
  *
- * Date:Thu Nov 18 2021 10:26:17 GMT+0800 (中国标准时间)
+ * Date:Thu Nov 18 2021 16:51:32 GMT+0800 (中国标准时间)
  */
 (function () {
   'use strict';
@@ -1520,6 +1520,14 @@
     return target;
   };
 
+  function toNode(tagname) {
+    if (['svg', 'circle', 'path', 'rect', 'ellipse', 'line', 'polyline', 'polygon', 'text'].indexOf(tagname) > -1) {
+      return document.createElementNS('http://www.w3.org/2000/svg', tagname);
+    } else {
+      return document.createElement(tagname);
+    }
+  }
+
   function mountComponent(target, Component, module) {
     var component = new Component();
     var hadWillUpdate = false;
@@ -1594,7 +1602,7 @@
           component.__children.push(mountComponent(pEl, module.__component__[vnode.name], module));
         } // 否则就是普通的标签
         else {
-            el = document.createElement(vnode.name);
+            el = toNode(vnode.name);
 
             for (var attrKey in vnode.attrs) {
               var attrKeys = (attrKey + ":").split(':'); // 指令

@@ -3,6 +3,7 @@ import isValidKey from '../tools/isValidKey';
 import watcher from '../observe/watcher';
 import proxy from '../observe/proxy';
 import { evalExpress } from '@hai2007/algorithm/value';
+import { toNode } from './to-node';
 
 // 用于挂载组件
 
@@ -92,7 +93,7 @@ export default function mountComponent(target, Component, module) {
             // 否则就是普通的标签
             else {
 
-                el = document.createElement(vnode.name);
+                el = toNode(vnode.name);
                 for (let attrKey in vnode.attrs) {
 
                     let attrKeys = (attrKey + ":").split(':');
