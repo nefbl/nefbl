@@ -5,12 +5,12 @@
  *
  * author 你好2007 < https://hai2007.gitee.io/sweethome >
  *
- * version 0.2.3
+ * version 0.2.4
  *
  * Copyright (c) 2021-2021 hai2007 走一步，再走一步。
  * Released under the MIT license
  *
- * Date:Mon Oct 11 2021 14:39:14 GMT+0800 (中国标准时间)
+ * Date:Thu Nov 18 2021 10:26:17 GMT+0800 (中国标准时间)
  */
 (function () {
   'use strict';
@@ -1651,7 +1651,8 @@
           }
       } else if (vnode.type == 'text') {
         el = document.createTextNode("");
-        el.textContent = vnode.content.replace(/↵/g, '\n');
+        el.textContent = vnode.content.replace(/↵/g, '\n') // 特殊转义字符进行校对
+        .replace(/\&lt;/g, '<').replace(/\&gt;/g, '>').replace(/\&amp;/g, '&');
       }
 
       if (el != null) {

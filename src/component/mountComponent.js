@@ -146,7 +146,12 @@ export default function mountComponent(target, Component, module) {
 
         } else if (vnode.type == 'text') {
             el = document.createTextNode("");
-            el.textContent = vnode.content.replace(/↵/g, '\n');
+            el.textContent = vnode.content.replace(/↵/g, '\n')
+
+                // 特殊转义字符进行校对
+                .replace(/\&lt;/g, '<')
+                .replace(/\&gt;/g, '>')
+                .replace(/\&amp;/g, '&');
         }
 
         if (el != null) {
