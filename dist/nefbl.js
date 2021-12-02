@@ -5,12 +5,12 @@
  *
  * author 你好2007 < https://hai2007.gitee.io/sweethome >
  *
- * version 0.2.5
+ * version 0.2.6
  *
  * Copyright (c) 2021-2021 hai2007 走一步，再走一步。
  * Released under the MIT license
  *
- * Date:Thu Nov 18 2021 16:51:32 GMT+0800 (中国标准时间)
+ * Date:Thu Dec 02 2021 16:51:00 GMT+0800 (中国标准时间)
  */
 (function () {
   'use strict';
@@ -183,19 +183,6 @@
   }
 
   /**
-   * 判断一个值是不是String。
-   *
-   * @param {*} value 需要判断类型的值
-   * @returns {boolean} 如果是String返回true，否则返回false
-   */
-
-  function _isString (value) {
-    var type = _typeof(value);
-
-    return type === 'string' || type === 'object' && value != null && !Array.isArray(value) && getType(value) === '[object String]';
-  }
-
-  /**
    * 判断一个值是不是Function。
    *
    * @param {*} value 需要判断类型的值
@@ -223,7 +210,6 @@
 
 
   var isObject = _isObject; // 基本类型
-  var isString = _isString;
 
   var isFunction = _isFunction;
   var isArray = function isArray(input) {
@@ -353,6 +339,40 @@
     blanksReg: /^[\x20\t\r\n\f]{0,}$/,
     // 标志符
     identifier: /^[a-zA-Z_$][0-9a-zA-Z_$]{0,}$/
+  };
+
+  var toString$1 = Object.prototype.toString;
+  /**
+   * 获取一个值的类型字符串[object type]
+   *
+   * @param {*} value 需要返回类型的值
+   * @returns {string} 返回类型字符串
+   */
+
+  function getType$1 (value) {
+    if (value == null) {
+      return value === undefined ? '[object Undefined]' : '[object Null]';
+    }
+
+    return toString$1.call(value);
+  }
+
+  /**
+   * 判断一个值是不是String。
+   *
+   * @param {*} value 需要判断类型的值
+   * @returns {boolean} 如果是String返回true，否则返回false
+   */
+
+  function _isString (value) {
+    var type = _typeof(value);
+
+    return type === 'string' || type === 'object' && value != null && !Array.isArray(value) && getType$1(value) === '[object String]';
+  }
+
+  var isString = _isString;
+  var isArray$1 = function isArray(input) {
+    return Array.isArray(input);
   };
 
   function analyseTag (attrString) {
@@ -728,6 +748,7 @@
           DomTree.push(tag);
         }
       } else {
+        tag.tagName = tag.tagName.trim();
         DomTree.push(tag);
       }
 
@@ -1511,7 +1532,7 @@
 
     for (var i = 0; i < path.length - 1; i++) {
       // 如果需要补充
-      if (!(path[i] in _target)) _target[path[i]] = isArray(_target) ? [] : {}; // 拼接下一个
+      if (!(path[i] in _target)) _target[path[i]] = isArray$1(_target) ? [] : {}; // 拼接下一个
 
       _target = _target[path[i]];
     }
